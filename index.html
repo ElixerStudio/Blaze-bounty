@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#080b10">
+  <title>BLAZE BOUNTY — 3D</title>
+  <link rel="stylesheet" href="./src/style.css?v=20261029-intro-cut-mp3-12">
+  <script src="./vendor/three.min.js"></script>
+</head>
+<body>
+  <main id="gameRoot">
+    <canvas id="world" aria-label="BLAZE BOUNTY 3D oyun alanı"></canvas>
+    <div class="vignette"></div>
+    <div class="scanlines"></div>
+
+    <div id="topHud" class="hud topHud hidden">
+      <div class="hudBrand"><span class="brandMark">B</span><span>BLAZE <b>BOUNTY</b></span></div>
+      <div class="levelReadout"><small>BÖLGE</small><strong id="mapName">ÇAYIR ÇİMEN</strong><span id="mapNumber">01 / 30</span></div>
+      <button id="vsShopBtn" class="vsShopButton hidden" type="button">MAĞAZA · 15</button>
+      <div id="vsTimerReadout" class="vsTimerReadout hidden" aria-label="Tur süresi"><span id="vsTopTimerText">15</span></div>
+      <div class="cashReadout"><span class="coin">◈</span><strong id="moneyText">0</strong></div>
+      <button id="pauseBtn" class="iconButton" aria-label="Oyunu duraklat">Ⅱ</button>
+    </div>
+
+    <section id="combatHud" class="hud combatHud hidden">
+      <button id="cameraModeBtn" class="cameraModeButton" type="button" aria-label="Birinci şahıs görünümüne geç">3. ŞAHIS</button>
+      <div class="vitals panel">
+        <div class="vitalLine"><span>CAN</span><strong id="hpText">100</strong><div class="meter"><i id="hpBar"></i></div></div>
+        <div class="vitalLine armorLine"><span>ZIRH</span><strong id="armorText">0</strong><div class="meter"><i id="armorBar"></i></div></div>
+      </div>
+      <div class="utilityActions">
+        <button id="kitBtn" class="utilityButton" aria-label="İlk yardım kiti kullan">＋<small>KİT <b id="kitCount">1</b></small></button>
+        <button id="grenadeBtn" class="utilityButton" aria-label="El bombası at"><svg class="grenadeIcon" viewBox="0 0 32 38" aria-hidden="true"><path d="M12 9V5.5c0-1 .8-1.8 1.8-1.8h4.4c1 0 1.8.8 1.8 1.8V9" fill="#9da79a" stroke="#e0e5d8" stroke-width="1.4"/><path d="M11 9h10l3 4.5v13c0 5.2-3.3 8.2-8 8.2s-8-3-8-8.2v-13L11 9Z" fill="url(#fragBody)" stroke="#cfdbbb" stroke-width="1.5"/><path d="M8.5 15h15M8 19h16M8 23h16M9 27h14" fill="none" stroke="#b2c58e" stroke-width="1.15" opacity=".88"/><path d="M19 7.5c5.4-2.5 8.4-.7 8.4 2.8v8.4l-2.7 1.2-1.4-8.2" fill="#8c968b" stroke="#e4e7db" stroke-width="1.2" stroke-linejoin="round"/><circle cx="25.2" cy="7.9" r="2.1" fill="none" stroke="#e8e9df" stroke-width="1.3"/><defs><linearGradient id="fragBody" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#667c4b"/><stop offset=".5" stop-color="#405a3b"/><stop offset="1" stop-color="#263c32"/></linearGradient></defs></svg><small>BOMBA <b id="grenadeCount">10</b></small></button>
+      </div>
+      <div class="miniMapGroup">
+        <div class="miniMap panel" aria-label="Bölge mini haritası">
+          <div class="miniMapHead"><span>HARİTA</span><b>K</b></div>
+          <canvas id="miniMap" width="256" height="216" aria-label="Oyuncu, düşmanlar ve kapı"></canvas>
+        </div>
+        <button id="mapQuickBtn" class="mapQuickButton" type="button">BÖLÜMLER</button>
+        <div class="ammo panel"><small id="weaponName">TABANCA</small><strong><span id="ammoText">12</span><em>/</em><span id="reserveText">60</span></strong></div>
+      </div>
+      <div class="bossPanel hidden" id="bossPanel"><div class="bossName" id="bossName">KARDİNAL</div><div class="bossShieldTrack hidden" id="bossShieldTrack"><div class="bossShieldReadout"><span>KALKAN</span><b id="bossShieldText">0 / 0</b></div><div class="bossShieldMeter"><i id="bossShieldBar"></i></div></div><div class="bossMeter"><i id="bossBar"></i></div></div>
+      <div id="crosshair" class="crosshair"><i></i><i></i><i></i><i></i></div>
+      <div id="damageDirection" class="damageDirection hidden" aria-hidden="true"><i></i></div>
+      <div id="notice" class="notice hidden"></div>
+    </section>
+
+    <div id="desktopHelp" class="desktopHelp hidden">W A S D <i>HAREKET</i><span>•</span> FARE <i>DÖN / NİŞAN</i><span>•</span> SOL TIK <i>ATEŞ</i><span>•</span> V <i>KAMERA</i><span>•</span> G <i>BOMBA</i><span>•</span> H <i>KİT</i><span>•</span> R <i>DOLDUR</i><span>•</span> KAPIYA YÜRÜ <span>•</span> Q <i>MARKET</i></div>
+
+    <div id="mobileControls" class="mobileControls hidden">
+      <div id="moveZone" class="moveZone" aria-label="Sol ekranda dokunup hareket et"><div id="moveStick" class="stick"><div class="stickRing"></div><div id="stickKnob" class="stickKnob"></div></div></div>
+      <div class="touchActions">
+        <div class="mobileUtilityStack">
+          <button id="mobileAim" class="touchButton smallAction aimButton" aria-label="Nişan al">◎<small>NİŞAN</small></button>
+          <button id="mobileKit" class="touchButton smallAction" aria-label="İlk yardım kiti kullan">＋<small>KİT <b id="mobileKitCount">1</b></small></button>
+          <button id="mobileGrenade" class="touchButton smallAction" aria-label="El bombası at"><span aria-hidden="true">✹</span><small>BOMBA <b id="mobileGrenadeCount">10</b></small></button>
+        </div>
+        <button id="mobileFire" class="touchButton fireButton" aria-label="Ateş et"><span>ATEŞ</span></button>
+        <button id="mobileJump" class="touchButton jumpButton" aria-label="Zıpla">↑<small>ZIPLA</small></button>
+      </div>
+    </div>
+
+    <section id="mainMenu" class="overlay menuOverlay hidden">
+      <div class="menuGlow"></div>
+      <div class="menuContent">
+        <div class="eyebrow"><i></i> Elixer Studio gururla sunar</div>
+        <h1>BLAZE<br><span>BOUNTY</span></h1>
+        <div class="menuButtons">
+          <button id="startBtn" class="secondaryButton"><span>OYUNA BAŞLA</span></button>
+          <button id="onlineBtn" class="secondaryButton">ÇOK OYUNCULU</button>
+          <button id="mapSelectBtn" class="secondaryButton">BÖLGE SEÇ</button>
+          <button id="characterBtn" class="secondaryButton">KARAKTER</button>
+          <button id="settingsBtn" class="secondaryButton">AYARLAR</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="onlinePanel" class="overlay dialogOverlay hidden" aria-label="Çevrimiçi oda">
+      <div class="dialogCard onlineCard">
+        <button id="onlineBackBtn" class="settingsBackButton" type="button">← GERİ</button>
+        <div class="eyebrow"><i></i> ÇOK OYUNCULU</div><h2>ODA KODU</h2>
+        <p id="onlineStatus" aria-live="polite"></p>
+        <button id="createRoomBtn" class="primaryButton" type="button"><span>ODA KUR</span></button>
+        <label class="roomCodeEntry"><span>ODA KODU</span><input id="roomCodeInput" type="text" maxlength="9" autocomplete="off" placeholder="ÖR. A7K2QF9BD"></label>
+        <button id="joinRoomBtn" class="secondaryButton" type="button">KOD İLE KATIL</button>
+        <div id="roomReady" class="roomReady hidden"><b>ODA KODUN</b><strong id="roomCodeText">------</strong><button id="copyRoomBtn" class="secondaryButton" type="button">KODU KOPYALA</button><small id="roomPlayersText">Arkadaşına kodu gönder</small></div>
+        <button id="startOnlineBtn" class="primaryButton hidden" type="button"><span>VS MAÇINI BAŞLAT</span></button>
+        <button id="leaveRoomBtn" class="textButton hidden" type="button">ODADAN AYRIL</button>
+      </div>
+    </section>
+
+    <section id="introOverlay" class="overlay introOverlay">
+      <video id="introVideo" playsinline preload="auto">
+        <source src="./intro.mp4" type="video/mp4">
+      </video>
+      <div class="introShade"></div>
+      <div class="introCaption"><div id="introProgress" class="introProgress"><i id="introProgressBar"></i></div><small>UNITY ENGİNE V8</small><strong>BLAZE BOUNTY</strong></div>
+    </section>
+
+    <section id="characterPanel" class="overlay dialogOverlay characterOverlay hidden" aria-label="Karakter düzenle">
+      <div class="dialogCard characterCard"><button id="characterBackBtn" class="settingsBackButton" type="button">← GERİ</button><div class="eyebrow"><i></i> KARAKTER ATÖLYESİ</div><h2>KARAKTER</h2>
+        <label class="characterOption characterNameOption"><span>TAKMA AD</span><input id="characterNickname" type="text" maxlength="16" autocomplete="nickname" placeholder="Oyuncu adı"></label>
+        <label class="characterOption"><span>CİLT</span><select id="lookSkin"><option value="tan">BUĞDAY</option><option value="light">AÇIK</option><option value="dark">ESMER</option><option value="olive">ZEYTİN</option><option value="pale">SOLUK</option></select></label>
+        <label class="characterOption"><span>CEKET</span><select id="lookJacket"><option value="teal">NEON TIM</option><option value="black">GECE SİYAHI</option><option value="red">KIRMIZI TAKTİK</option><option value="white">ARCTIC</option><option value="purple">VIOLET</option><option value="gold">ALTIN TIM</option><option value="blue">OKYANUS</option><option value="orange">KURTARMA</option></select></label>
+        <label class="characterOption"><span>PANTOLON</span><select id="lookPants"><option value="cargo">KARGO</option><option value="black">KOMANDO</option><option value="urban">ŞEHİR</option><option value="desert">ÇÖL</option><option value="arctic">ARCTIC</option><option value="olive">ZEYTİN</option><option value="red">KIRMIZI ŞERİT</option></select></label>
+        <label class="characterOption"><span>ŞAPKA</span><select id="lookHat"><option value="none">YOK</option><option value="cap">TAKTİK ŞAPKA</option><option value="helmet">KASK</option><option value="beanie">BERE</option><option value="crown">NEON TAÇ</option><option value="boonie">BOONIE</option><option value="pilot">PİLOT KASKI</option></select></label>
+        <label class="characterOption"><span>GÖZLÜK</span><select id="lookGlasses"><option value="none">YOK</option><option value="visor">NEON VİZÖR</option><option value="tactical">TAKTİK</option><option value="gold">ALTIN</option><option value="red">KIRMIZI CAM</option></select></label>
+        <label class="characterOption"><span>YELEK</span><select id="lookVest"><option value="none">YOK</option><option value="scout">KEŞİF</option><option value="plated">ZIRHLI</option><option value="hazard">TEHLİKE</option><option value="royal">KRALİYET</option></select></label>
+        <label class="characterOption"><span>ÇANTA</span><select id="lookPack"><option value="compact">KOMPAKT</option><option value="ranger">RANGER</option><option value="heavy">AĞIR</option><option value="none">YOK</option></select></label>
+        <button id="characterApplyBtn" class="primaryButton" type="button"><span>UYGULA</span></button>
+      </div>
+    </section>
+    <div id="transitionOverlay" class="transitionOverlay hidden" aria-hidden="true"><i></i><b></b><span>OYUN HAZIRLANIYOR</span></div>
+
+    <section id="pauseMenu" class="overlay dialogOverlay hidden">
+      <div class="dialogCard">
+        <div class="eyebrow"><i></i> GÜVENLİ NOKTA</div><h2 id="pauseTitle">OYUN DURAKLATILDI</h2>
+        <p id="pauseDescription">Güvenli bölgede ekipmanını düzenle.</p>
+        <button id="resumeBtn" class="primaryButton"><span>DEVAM ET</span><b>↗</b></button>
+        <button id="openShopBtn" class="secondaryButton">CEPHANELİK</button>
+        <button id="openPetBtn" class="secondaryButton">EVCİL HAYVANIM</button>
+        <button id="pauseSettingsBtn" class="textButton">AYARLAR <span>↗</span></button>
+        <button id="quitBtn" class="textButton">ANA MENÜYE DÖN</button>
+      </div>
+    </section>
+
+    <section id="shopPanel" class="overlay dialogOverlay hidden">
+      <div class="shopCard">
+        <header class="shopHeader"><div><div class="eyebrow"><i></i> TEDARİK NOKTASI</div><h2>CEPHANELİK</h2></div><div class="cashReadout"><span class="coin">◈</span><strong id="shopMoney">0</strong></div><button id="closeShopBtn" class="iconButton">×</button></header>
+        <section id="vsScorePanel" class="vsScorePanel hidden" aria-live="polite" aria-label="Maç skoru"><div class="vsRoundLine"><strong id="vsRoundText">TUR 1 / 5</strong><span id="vsPhaseText">HAZIRLIK</span><b id="vsTimerText">15</b></div><div class="vsScoreLine"><strong id="vsSelfScore">0-0</strong></div></section>
+        <nav class="shopTabs" aria-label="Cephanelik kategorileri"><button id="shopWeaponsTab" class="shopTab active">SİLAHLAR</button><button id="shopAmmoTab" class="shopTab">CEPHANE</button><button id="shopGearTab" class="shopTab">EKİPMAN</button></nav>
+        <div id="shopAmmoSummary" class="ammoSummary hidden" aria-live="polite"></div>
+        <div id="shopItems" class="shopItems"></div>
+        <div class="shopFooter"><span>ELİNDEKİ SİLAHI KUŞAN</span><button id="shopDoneBtn" class="primaryButton"><span>OYUNA DÖN</span><b>↗</b></button></div>
+      </div>
+    </section>
+
+    <section id="petPanel" class="overlay dialogOverlay hidden">
+      <div class="shopCard">
+        <header class="shopHeader"><div><div class="eyebrow"><i></i> YOL ARKADAŞLARI</div><h2>EVCİL HAYVANIM</h2></div><div class="cashReadout"><span class="coin">◈</span><strong id="petMoney">0</strong></div><button id="closePetBtn" class="iconButton" aria-label="Kapat">×</button></header>
+        <label id="petNameEditor" class="petNameEditor hidden"><span>DOSTUNUN İSMİ</span><input id="petNameInput" type="text" maxlength="16" autocomplete="off" autocapitalize="words" placeholder="Bir isim yaz..."></label>
+        <div id="petItems" class="shopItems petItems"></div>
+      </div>
+    </section>
+
+    <section id="mapPanel" class="overlay dialogOverlay hidden">
+      <div class="mapCard"><header class="shopHeader"><div><div class="eyebrow"><i></i> KAMPANYA</div><h2>BÖLGELER</h2></div><button id="closeMapBtn" class="iconButton">×</button></header><div id="mapGrid" class="mapGrid"></div></div>
+    </section>
+
+    <section id="settingsPanel" class="overlay dialogOverlay hidden">
+      <button id="settingsBackBtn" class="settingsBackButton" aria-label="Önceki menüye dön">← GERİ</button>
+      <div class="dialogCard settingsCard"><div class="eyebrow"><i></i> TERCİHLER</div><h2>AYARLAR</h2>
+        <label class="settingRow"><span>SES</span><input id="volumeSlider" type="range" min="0" max="100" value="70"><b id="volumeValue">70%</b></label>
+        <label class="settingRow sensitivityRow"><span>KAMERA HASSASİYETİ</span><input id="sensitivitySlider" type="range" min="0" max="5" step="0.1" value="1"><b id="sensitivityValue">1.0</b></label>
+        <label class="settingRow"><span>GRAFİKLER</span><select id="qualitySelect"><option value="ultra">ULTRA</option><option value="high">YÜKSEK</option><option value="medium" selected>ORTA</option><option value="low">DÜŞÜK</option></select></label>
+        <label class="settingRow"><span>FPS</span><select id="fpsLimitSelect"><option value="30">30 FPS</option><option value="60" selected>60 FPS</option></select></label>
+        <label class="settingRow"><span>GÖLGELER</span><select id="shadowSelect"><option value="on">AÇIK</option><option value="off">KAPALI</option></select></label>
+        <div class="resetRow"><span>OYUN KAYDINI SİL</span><button id="resetGameBtn" class="dangerButton" type="button">SIFIRLA</button></div>
+        <button id="applySettingsBtn" class="primaryButton"><span>UYGULA</span></button>
+        <footer class="creditsBlock"><strong>HAZIRLAYANLAR</strong><span>Erdem &amp; Arif Berkay</span><b>© 2026 Blaze Bounty</b><small>Tüm Hakları Google Play ve Unity Tarafından Korunmakta</small></footer>
+      </div>
+    </section>
+
+    <section id="deathPanel" class="overlay dialogOverlay hidden">
+      <div class="dialogCard"><div class="eyebrow"><i></i> SİNYAL KESİLDİ</div><h2>BÖLGEDE YENİLDİN</h2>
+        <button id="respawnBtn" class="primaryButton"><span>YENİDEN DOĞ</span><b>↗</b></button>
+        <button id="deathMenuBtn" class="textButton">ANA MENÜYE DÖN</button>
+      </div>
+    </section>
+
+    <section id="diagnosRewardPanel" class="overlay dialogOverlay hidden">
+      <div class="dialogCard chestRewardCard"><div class="eyebrow"><i></i> DIAGNOS SANDIĞI AÇILDI</div><h2>BÖLGE TAMAMLANDI</h2>
+        <p class="chestRewardMessage">Bana instagram dan ulaş.<br>oynadığın için teşekkürler!</p>
+        <button id="closeDiagnosRewardBtn" class="primaryButton"><span>DEVAM ET</span></button>
+      </div>
+    </section>
+
+    <div id="toast" class="toast hidden"></div>
+    <div id="roomDisbandToast" class="roomDisbandToast hidden" role="status" aria-live="polite"></div>
+  </main>
+  <script src="./src/game.js?v=20261029-intro-cut-mp3-12"></script>
+  <script src="./src/firebase-config.js?v=20261029-room-v1"></script>
+  <script src="./src/online.js?v=20261029-intro-cut-mp3-12"></script>
+</body>
+</html>
